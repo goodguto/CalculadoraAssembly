@@ -1,12 +1,31 @@
+# Aluno: Augusto Malheiros de Souza
+# Turma: A
+# Email: ams10@cesar.school
+# 1 questão 30/11 19:25
+# 2 questão 30/11 2039a
+
 .data
     menu_msg:       .asciiz "\n\n--- CALCULADORA MIPS ---\n1. Base 10 -> Bin, Oct, Hex, BCD\n2. Base 10 -> Compl. a 2 (16 bits)\n3. Analise Float/Double\n0. Sair\nEscolha: "
     msg_int:        .asciiz "\nDigite um inteiro (Base 10): "
+    newline:        .asciiz "\n"
+
     str_bin:        .asciiz "\nBinario (Base 2): 0b"
     str_oct:        .asciiz "\nOctal (Base 8):   0o"
     str_hex:        .asciiz "\nHexa (Base 16):   0x"
     str_bcd:        .asciiz "\nBCD (8421):       "
-    newline:        .asciiz "\n"
-    
+
+    str_neg_det:    .asciiz "\n[1] Numero negativo. Convertendo para positivo para analise..."
+    str_inv:        .asciiz "\n[2] Invertendo bits (NOT)..."
+    str_somar1:     .asciiz "\n[3] Somando 1..."
+    str_res_16:     .asciiz "\nResultado Hex (16-bit): "
+
+    msg_float:      .asciiz "\nDigite Float: "
+    msg_double:     .asciiz "\nDigite Double: "
+    str_sinal:      .asciiz "\nSinal (+/-): "
+    str_exp:        .asciiz "\nExpoente (Bits): "
+    str_vies:       .asciiz " | Com Vies: "
+    str_frac:       .asciiz "\nFracao (Mantissa): "
+
 .text
 .globl main
 
@@ -23,12 +42,16 @@ main:
     
     beq $t0, 0, exit
     beq $t0, 1, opt_bases
+    beq $t0, 2, opt_signed
+    
+    # beq $t0, 3, opt_floats 
     
     j main 
 
 exit:
     li $v0, 10
     syscall
+
 opt_bases:
     li $v0, 4
     la $a0, msg_int
@@ -38,19 +61,17 @@ opt_bases:
     syscall
     move $s0, $v0
     
-    #BINARIO
+    # BINARIO
     li $v0, 4
     la $a0, str_bin
     syscall
-    
     move $a0, $s0
     jal print_bin_32
     
-    #OCTAL 
+    # OCTAL 
     li $v0, 4
     la $a0, str_oct
     syscall
-    
     move $a0, $s0
     jal print_oct
     
@@ -58,7 +79,6 @@ opt_bases:
     li $v0, 4
     la $a0, str_hex
     syscall
-    
     move $a0, $s0
     li $v0, 34
     syscall
@@ -67,12 +87,10 @@ opt_bases:
     li $v0, 4
     la $a0, str_bcd
     syscall
-    
     move $a0, $s0
     jal print_bcd
     
     j main
-
 
 print_bin_32:
     move $t0, $a0
@@ -80,20 +98,16 @@ print_bin_32:
 loop_b32:
     srlv $t2, $t0, $t1
     andi $t2, $t2, 1
-    
     li $v0, 1
     move $a0, $t2
     syscall
-    
     subi $t1, $t1, 1
     bge $t1, 0, loop_b32
     jr $ra
 
 print_oct:
-    # Imprime Octal por divisão 
     move $t0, $a0
     li $t1, 8
-    
     bne $t0, 0, calc_oct
     li $v0, 1
     syscall
@@ -105,7 +119,6 @@ loop_stack_oct:
     divu $t0, $t1
     mflo $t0
     mfhi $t3 
-    
     subu $sp, $sp, 4
     sw $t3, ($sp)
     addi $t2, $t2, 1
@@ -120,7 +133,6 @@ print_stack_oct:
     jr $ra
 
 print_bcd:
-    # BCD
     move $t0, $a0
     li $t1, 10
     li $t2, 0 
@@ -129,27 +141,21 @@ print_bcd:
     li $v0, 1
     syscall
     jr $ra
-    
 loop_stack_bcd:
     beq $t0, 0, print_res_bcd
     divu $t0, $t1
     mflo $t0
-    mfhi $t3 # Digito decimal
-    
+    mfhi $t3 
     subu $sp, $sp, 4
     sw $t3, ($sp)
     addi $t2, $t2, 1
     j loop_stack_bcd
-
 print_res_bcd:
     lw $t3, ($sp)
     addu $sp, $sp, 4
-    
-    # Imprimir espaco
     li $v0, 11
     li $a0, 32
     syscall
-    
     li $t4, 3
 inner_bcd:
     srlv $t5, $t3, $t4
@@ -159,7 +165,88 @@ inner_bcd:
     syscall
     subi $t4, $t4, 1
     bge $t4, 0, inner_bcd
-    
     subi $t2, $t2, 1
     bgt $t2, 0, print_res_bcd
+    jr $ra
+
+#A2 
+opt_signed:
+    li $v0, 4
+    la $a0, msg_int
+    syscall
+    
+    li $v0, 5
+    syscall
+    move $s0, $v0
+    
+    andi $s1, $s0, 0xFFFF 
+    
+    blt $s0, 0, is_neg
+    
+    # Se positivo
+    li $v0, 4
+    la $a0, str_res_16
+    syscall
+    li $v0, 34
+    move $a0, $s1
+    syscall
+    j main
+
+is_neg:
+    li $v0, 4
+    la $a0, str_neg_det
+    syscall
+    
+    sub $t0, $zero, $s0
+    
+    li $v0, 4
+    la $a0, str_bin
+    syscall
+    move $a0, $t0
+    jal print_bin_16
+    
+    li $v0, 4
+    la $a0, str_inv
+    syscall
+    not $t1, $t0
+    andi $t1, $t1, 0xFFFF
+    
+    li $v0, 4
+    la $a0, str_bin
+    syscall
+    move $a0, $t1
+    jal print_bin_16
+    
+    li $v0, 4
+    la $a0, str_somar1
+    syscall
+    addi $t2, $t1, 1
+    andi $t2, $t2, 0xFFFF
+    
+    li $v0, 4
+    la $a0, str_bin
+    syscall
+    move $a0, $t2
+    jal print_bin_16
+    
+    li $v0, 4
+    la $a0, str_res_16
+    syscall
+    li $v0, 34
+    move $a0, $t2
+    syscall
+    
+    j main
+
+print_bin_16:
+    move $t8, $a0
+    li $t9, 15
+loop_b16:
+    srlv $t7, $t8, $t9
+    andi $t7, $t7, 1
+    li $v0, 1
+    move $a0, $t7
+    syscall
+    subi $t9, $t9, 1
+    bge $t9, 0, loop_b16
     jr $ra
