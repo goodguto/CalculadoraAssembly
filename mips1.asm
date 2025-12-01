@@ -2,8 +2,8 @@
 # Turma: A
 # Email: ams10@cesar.school
 # 1 questão 30/11 19:25
-# 2 questão 30/11 2039a
-
+# 2 questão 30/11 20:39
+# 3 questão 30/11 21:03
 .data
     menu_msg:       .asciiz "\n\n--- CALCULADORA MIPS ---\n1. Base 10 -> Bin, Oct, Hex, BCD\n2. Base 10 -> Compl. a 2 (16 bits)\n3. Analise Float/Double\n0. Sair\nEscolha: "
     msg_int:        .asciiz "\nDigite um inteiro (Base 10): "
@@ -44,7 +44,7 @@ main:
     beq $t0, 1, opt_bases
     beq $t0, 2, opt_signed
     
-    # beq $t0, 3, opt_floats 
+    beq $t0, 3, opt_floats 
     
     j main 
 
@@ -249,4 +249,116 @@ loop_b16:
     syscall
     subi $t9, $t9, 1
     bge $t9, 0, loop_b16
+    jr $ra
+    
+opt_floats:
+    li $v0, 4
+    la $a0, msg_float
+    syscall
+    
+    li $v0, 6
+    syscall
+    
+    mfc1 $t0, $f0
+    
+    li $v0, 4
+    la $a0, str_sinal
+    syscall
+    srl $t1, $t0, 31
+    li $v0, 1
+    move $a0, $t1
+    syscall
+    
+    li $v0, 4
+    la $a0, str_exp
+    syscall
+    srl $t2, $t0, 23
+    andi $t2, $t2, 0xFF
+    move $a0, $t2
+    li $a1, 8
+    jal print_bits_n
+    
+    # Vies Float
+    li $v0, 4
+    la $a0, str_vies
+    syscall
+    subi $t3, $t2, 127
+    li $v0, 1
+    move $a0, $t3
+    syscall
+    
+    # Fracao
+    li $v0, 4
+    la $a0, str_frac
+    syscall
+    andi $t4, $t0, 0x7FFFFF
+    move $a0, $t4
+    li $a1, 23
+    jal print_bits_n
+    
+    #double
+    li $v0, 4
+    la $a0, msg_double
+    syscall
+    
+    li $v0, 7
+    syscall
+    
+    mfc1 $t5, $f1
+    mfc1 $t6, $f0
+    
+    # Sinal
+    li $v0, 4
+    la $a0, str_sinal
+    syscall
+    srl $t1, $t5, 31
+    li $v0, 1
+    move $a0, $t1
+    syscall
+    
+    # Expoente
+    li $v0, 4
+    la $a0, str_exp
+    syscall
+    srl $t2, $t5, 20
+    andi $t2, $t2, 0x7FF
+    move $a0, $t2
+    li $a1, 11
+    jal print_bits_n
+    
+    # Vies Double
+    li $v0, 4
+    la $a0, str_vies
+    syscall
+    subi $t3, $t2, 1023
+    li $v0, 1
+    move $a0, $t3
+    syscall
+    
+    # Fracao
+    li $v0, 4
+    la $a0, str_frac
+    syscall
+    
+    andi $t7, $t5, 0xFFFFF
+    move $a0, $t7
+    li $a1, 20
+    jal print_bits_n
+    
+    move $a0, $t6
+    li $a1, 32
+    jal print_bits_n
+    
+    j main
+
+print_bits_n:
+    subi $t9, $a1, 1
+loop_bits_n:
+    srlv $t8, $a0, $t9
+    andi $t8, $t8, 1
+    li $v0, 1
+    move $a0, $t8
+    syscall
+    subi $t9, $t9, 1
+    bge $t9, 0, loop_bits_n
     jr $ra
